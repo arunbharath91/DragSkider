@@ -1,0 +1,99 @@
+/*drag-slider*/
+
+:root {
+  --gap: 12px;
+}
+.item,
+.drag-slider {
+  box-sizing: border-box;
+}
+
+.drag-slider:not(.dragging) {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.drag-slider:not(.dragging)::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.drag-slider:not(.dragging) {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.drag-slider {
+  position: relative;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space: nowrap;
+  transition: all 0.2s;
+  transform: scale(1);
+  will-change: transform;
+  user-select: none;
+  cursor: pointer;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  margin: calc(-1 * var(--gap)) 0 0 calc(-1 * var(--gap));
+  width: calc(100% + var(--gap));
+  backface-visibility: hidden;
+}
+
+.drag-slider .item {
+  margin: var(--gap) 0 0 var(--gap);
+}
+
+.drag-slider:hover {
+  cursor: -webkit-grab;
+}
+
+.drag-slider.active {
+  background: rgba(255, 255, 255, 0.3);
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+  transform: scale(1.02);
+}
+
+.drag-overlay {
+  position: relative;
+  margin: 0 var(--gap);
+  overflow: hidden;
+}
+
+.drag-nav {
+  position: absolute;
+  top:0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 1000;
+  background: rgba(255,255,255, 0.4);
+}
+
+.drag-nav.left {
+  left: 0;
+}
+
+.drag-nav.left.at-left-edge{
+display: none !important;
+}
+
+.drag-nav.right.at-right-edge{
+  display: none !important;
+}
+
+.drag-nav.right {
+  right: 0;
+}
+
+.drag-nav > div {
+  position: relative;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  background-color: #f1efef;
+  border-radius: 30px;
+}
