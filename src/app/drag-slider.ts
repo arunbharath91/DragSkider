@@ -1,3 +1,4 @@
+import { Debounce } from "./helper";
 
 interface IOptions {
   threshold?: number;
@@ -6,117 +7,143 @@ interface IOptions {
 }
 
 const defaultOptions: IOptions = {
-  threshold: 3,
+  threshold: 2,
   gap: 12,
   transition: false
 }
 
 export class DragSlider {
-  private selector: HTMLElement;
-  private childSelector: HTMLElement;
-  public singleItemWidth!: number;
+  private selector!: HTMLElement;
+  private childSelector!: HTMLElement;
+  private isDown = false;
+  private scrollX!: number;
+  private scrollLeft!: number;
   private options: IOptions;
-  private isDown: boolean = false;
-  private startX: number = 0;
-  private scrollLeft: number = 0;
-  protected transitionClass: string[] = [];
-  private leftNav!: Element;
-  private rightNav!: Element;
+
+  private leftOverlay!: HTMLElement;
+  private rightOverlay!: HTMLElement;
+  private dragNav!: HTMLElement;
+
+  public singleItemWidth!: number;
   constructor(selector: string, options?: IOptions) {
-    this.selector = document.querySelector(selector) as HTMLInputElement;
-    this.childSelector = this.selector.querySelector('.drag-slider') as HTMLElement;
     this.options = { ...defaultOptions, ...options, };
-    this.transitionClass = this.options.transition ? ['dragging', 'active'] : ['dragging'];
+    this.selector = document.querySelector(selector) as HTMLElement;
+    this.childSelector = this.selector.querySelector('.drag-slider') as HTMLElement;
 
-    this.setStyles();
-    if(!this.detectMob()) {
-      this.projectNav();
+    const ifImgFound = (this.childSelector.querySelector('.item > img') as HTMLElement);
+    if (ifImgFound) {
+      ifImgFound.addEventListener('load', (e: any) => {
+        this.init();
+      }, false);
+    } else {
+      this.init();
     }
+
+
+
+  }
+
+  private init() {
+    this.singleItemWidth = (this.childSelector.querySelector('.item') as HTMLElement).offsetWidth;
+    Array.prototype.slice.call(this.childSelector.querySelectorAll('.item')).forEach((item: HTMLElement) => {
+      item.style.width = `${this.singleItemWidth}px`
+      item.style.setProperty('--gap', `${this.options.gap}px`)
+    });
+    this.projectControlElements();
     this.eventRegistration();
-    setTimeout(() => {
-      this.singleItemWidth = (this.childSelector.querySelector('.item') as HTMLElement).offsetWidth + ((this.options.gap) ? this.options.gap : 0)
-    }, 1000);
+    this.controlVisibility();
   }
 
-  public setStyles() {
-    const isMobile = this.detectMob();
-    this.childSelector.style.cssText = `${(isMobile) ? '' : 'overflow: hidden;'}`;
-    this.selector.style.setProperty('--gap', `${this.options.gap}px`);
+  private projectControlElements() {
+    this.leftOverlay = document.createElement('span');
+    this.leftOverlay.className = 'scroll-overlay left';
+    this.rightOverlay = document.createElement('span');
+    this.rightOverlay.className = 'scroll-overlay right';
+    this.selector.append(this.leftOverlay);
+    this.selector.prepend(this.rightOverlay);
+
+    this.dragNav = document.createElement('div');
+    this.dragNav.className = 'drag-nav';
+    this.dragNav.insertAdjacentHTML('afterbegin', '<div class="left-nav"></div><div class="right-nav"></div>');
+    this.selector.prepend(this.dragNav);
+
   }
 
-  private projectNav() {
-    this.leftNav = document.createElement('div');
-    this.leftNav.className = 'drag-nav left at-left-edge';
-    this.leftNav.innerHTML = `<div class="left-button">&#8592;</div>`;
-    this.rightNav = document.createElement('div');
-    this.rightNav.className = 'drag-nav right';
-    this.rightNav.innerHTML = `<div class="right-button">&#8594;</div>`;
-
-    this.selector.insertAdjacentElement('afterbegin', this.leftNav);
-    this.selector.insertAdjacentElement('beforeend', this.rightNav);
-
-    
-    (this.selector.querySelector('.drag-nav.right') as HTMLElement).addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.childSelector.scrollLeft += this.singleItemWidth;
-      this.navPrediction();
-    });
-
-    (this.selector.querySelector('.drag-nav.left') as HTMLElement).addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.childSelector.scrollLeft -= this.singleItemWidth;
-      this.navPrediction();
-    });
-  }
-
-  private eventRegistration() {
-
-    this.childSelector.onmouseleave = this.childSelector.onmouseup = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  private eventRegistration(): void {
+    // Mouse Up Function
+    this.childSelector.addEventListener("mouseup", () => {
       this.isDown = false;
-      this.childSelector.classList.remove(...this.transitionClass);
-    };
-    this.childSelector.onmousedown = (e: any) => {
+      this.childSelector.classList.remove("active");
+    });
+
+    // Mouse Leave Function
+    this.childSelector.addEventListener("mouseleave", () => {
+      this.isDown = false;
+      this.childSelector.classList.remove("active");
+    });
+
+    // Mouse Down Function
+    this.childSelector.addEventListener("mousedown", (e) => {
       e.preventDefault();
-      e.stopPropagation();
       this.isDown = true;
-      this.childSelector.classList.add(...this.transitionClass);
-      this.startX = e.pageX - this.childSelector.offsetLeft;
+      this.childSelector.classList.add("active");
+      scrollX = e.pageX - this.childSelector.offsetLeft;
       this.scrollLeft = this.childSelector.scrollLeft;
-    };
-    this.childSelector.onmousemove = (e: any) => {
+    });
+
+    // Mouse Move Function
+    this.childSelector.addEventListener("mousemove", (e) => {
       if (!this.isDown) return;
       e.preventDefault();
-      e.stopPropagation();
+      console.log('trigger')
+      const element = e.pageX - this.childSelector.offsetLeft;
+      const scrolling = (element - scrollX) * ((this.options.threshold) ? this.options.threshold : 2);
+      this.childSelector.scrollLeft = this.scrollLeft - scrolling;
+    });
 
-      const x = e.pageX - this.childSelector.offsetLeft;
-      const walk = (x - this.startX) * (this.options.threshold ? this.options.threshold : 3); //scroll-fast
-      this.childSelector.scrollLeft = this.scrollLeft - walk;
-      this.navPrediction();
-    };
+    this.dragNav.addEventListener('click', (e: any) => {
+      if (e.target.className == 'right-nav') {
+        this.childSelector.scrollLeft += this.singleItemWidth
+      } else if (e.target.className == 'left-nav') {
+        this.childSelector.scrollLeft -= this.singleItemWidth;
+      }
+    });
 
-  }
-
-  detectMob() {
-    let check = false;
-    (function (a) { if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4))) check = true; })(navigator.userAgent || navigator.vendor || (window as any).opera);
-    return check;
-  }
-
-  navPrediction() {
-    const sliderScrollLeft = this.childSelector.scrollLeft;
-    const sliderScrollWidth = this.childSelector.scrollWidth;
-    const sliderWidth = this.childSelector.offsetWidth;
-    console.log(sliderScrollLeft, sliderScrollWidth, sliderWidth);
-    this.leftNav.classList.toggle('at-left-edge', sliderScrollLeft === 0);
-    this.rightNav.classList.toggle(
-      'at-right-edge',
-      sliderScrollLeft === (sliderScrollWidth - sliderWidth),
-    );
+    this.childSelector.addEventListener("scroll", () => { this.controlVisibilityDebounce() });
 
   }
+  @Debounce(50)
+  controlVisibilityDebounce() {
+    this.controlVisibility()
+  }
+
+
+  private controlVisibility() {
+    if (this.childSelector.scrollLeft === 0) {
+      this.leftControlVisibility(false);
+    } else {
+      this.leftControlVisibility(true);
+    }
+    if (
+      this.childSelector.scrollLeft ===
+      this.childSelector.scrollWidth - this.childSelector.clientWidth
+    ) {
+      this.rightControlVisibility(false);
+    } else {
+      this.rightControlVisibility(true);
+    }
+  }
+
+  private leftControlVisibility(visible: boolean) {
+    this.leftOverlay.style.opacity = visible ? '1' : '0';
+    const leftNav = this.dragNav.querySelector('.left-nav') as HTMLElement;
+    (visible) ? leftNav.classList.remove('disabled') : leftNav.classList.add('disabled');
+  };
+  private rightControlVisibility(visible: boolean) {
+    this.rightOverlay.style.opacity = visible ? '1' : '0';
+    const righttNav = this.dragNav.querySelector('.right-nav') as HTMLElement;
+    (visible) ? righttNav.classList.remove('disabled') : righttNav.classList.add('disabled');
+  };
+
 
 }

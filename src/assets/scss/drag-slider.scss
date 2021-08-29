@@ -3,97 +3,97 @@
 :root {
   --gap: 12px;
 }
-.item,
+
+.drag-slider img,
+.drag-slider video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  -o-object-fit: cover;
+  object-fit: cover;
+}
+
+.drag-slider-container {
+  position: relative;
+  width: 100%;
+}
+
 .drag-slider {
-  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  padding: 1rem 0;
+  margin: 2.5rem 0;
+  cursor: default;
+  overflow: scroll hidden;
+  -ms-scroll-snap-type: x mandatory;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0px 1.25rem;
+  scrollbar-width: none;
 }
-
-.drag-slider:not(.dragging) {
-  scroll-behavior: smooth;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.drag-slider:not(.dragging)::-webkit-scrollbar {
+.drag-slider::-webkit-scrollbar {
   display: none;
 }
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.drag-slider:not(.dragging) {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+.drag-slider:not(.active) {
+  scroll-behavior: smooth;
 }
-
-.drag-slider {
-  position: relative;
-  overflow-x: scroll;
-  overflow-y: hidden;
-  white-space: nowrap;
-  transition: all 0.2s;
-  transform: scale(1);
-  will-change: transform;
-  user-select: none;
-  cursor: pointer;
-  display: inline-flex;
-  flex-wrap: nowrap;
-  margin: calc(-1 * var(--gap)) 0 0 calc(-1 * var(--gap));
-  width: calc(100% + var(--gap));
-  backface-visibility: hidden;
-}
-
-.drag-slider .item {
-  margin: var(--gap) 0 0 var(--gap);
-}
-
-.drag-slider:hover {
+.drag-slider.active {
+  cursor: grab;
   cursor: -webkit-grab;
 }
-
-.drag-slider.active {
-  background: rgba(255, 255, 255, 0.3);
-  cursor: grabbing;
-  cursor: -webkit-grabbing;
-  transform: scale(1.02);
+.drag-slider .item {
+  width: auto;
+  height: auto;
+  flex: 0 0 auto;
+  margin: 0 var(--gap, 1rem);
+  border: none;
+  outline: none;
+  border-radius: 0.25rem;
+  color: #252a32;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.drag-overlay {
-  position: relative;
-  margin: 0 var(--gap);
-  overflow: hidden;
+.scroll-overlay {
+  content: "";
+  position: absolute;
+  top: 95px;
+  bottom: 0;
+  width: 70px;
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.scroll-overlay.left {
+  left: 0;
+  opacity: 0;
+  background-image: linear-gradient(to right, white, rgba(255, 255, 255, 0));
+}
+.scroll-overlay.right {
+  right: 0;
+  background-image: linear-gradient(to left, white, rgba(255, 255, 255, 0));
+}
+
+.drag-nav > .left-nav,
+.drag-nav > .right-nav {
+  padding: 15px;
+  background: #ccc;
+  margin: var(--gap, 1rem);
+  cursor: pointer;
+  border-radius: 3px;
 }
 
 .drag-nav {
-  position: absolute;
-  top:0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  z-index: 1000;
-  background: rgba(255,255,255, 0.4);
+  display: inline-flex;
+  text-align: right;
 }
 
-.drag-nav.left {
-  left: 0;
-}
-
-.drag-nav.left.at-left-edge{
-display: none !important;
-}
-
-.drag-nav.right.at-right-edge{
-  display: none !important;
-}
-
-.drag-nav.right {
-  right: 0;
-}
-
-.drag-nav > div {
-  position: relative;
-  cursor: pointer;
-  width: 30px;
-  height: 30px;
-  background-color: #f1efef;
-  border-radius: 30px;
+.drag-nav > .left-nav.disabled,
+.drag-nav > .right-nav.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
