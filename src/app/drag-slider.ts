@@ -30,28 +30,34 @@ export class DragSlider {
     this.selector = document.querySelector(selector) as HTMLElement;
     this.childSelector = this.selector.querySelector('.drag-slider') as HTMLElement;
 
-    const ifImgFound = (this.childSelector.querySelector('.item > img') as HTMLElement);
-    if (ifImgFound) {
-      ifImgFound.addEventListener('load', (e: any) => {
-        this.init();
-      }, false);
-    } else {
-      this.init();
-    }
+    // const ifImgFound = (this.childSelector.querySelector('.item > img') as HTMLElement);
+    // if (ifImgFound) {
+    //   ifImgFound.addEventListener('load', (e: any) => {
+    //     if(e.target.complete) {
+    //       this.init();
+    //     }   
+    //   }, false);
+    // } else {
+    //   this.init();
+    // }
 
 
-
+    this.init()
   }
 
   private init() {
-    this.singleItemWidth = (this.childSelector.querySelector('.item') as HTMLElement).offsetWidth;
-    Array.prototype.slice.call(this.childSelector.querySelectorAll('.item')).forEach((item: HTMLElement) => {
-      item.style.width = `${this.singleItemWidth}px`
-      item.style.setProperty('--gap', `${this.options.gap}px`)
-    });
-    this.projectControlElements();
-    this.eventRegistration();
-    this.controlVisibility();
+    setTimeout(() => {
+      this.singleItemWidth = (this.childSelector.querySelector('.item') as HTMLElement).offsetWidth;
+      Array.prototype.slice.call(this.childSelector.querySelectorAll('.item')).forEach((item: HTMLElement) => {
+        item.style.width = `${this.singleItemWidth}px`
+        item.style.setProperty('--gap', `${this.options.gap}px`)
+      });
+
+      this.projectControlElements();
+      this.eventRegistration();
+      this.controlVisibility();
+    }, 1500)
+
   }
 
   private projectControlElements() {
